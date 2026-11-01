@@ -32,9 +32,8 @@ public class View extends JPanel {
         }
 
         ArrayList<Pipe> pipes = logic.getPipes();
-        if(pipes.isEmpty()){
-            for(int i = 0; i < pipes.size(); i++){
-                Pipe pipe = pipes.get(i);
+        if(!pipes.isEmpty()){
+            for (Pipe pipe : pipes) {
                 g.drawImage(pipe.getImage(), pipe.getPosX(), pipe.getPosY(),
                         pipe.getWidth(), pipe.getHeight(), null);
             }

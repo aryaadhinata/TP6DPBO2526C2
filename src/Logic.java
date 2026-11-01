@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Logic implements ActionListener, KeyListener {
     int frameWidth = 360;
@@ -35,17 +36,16 @@ public class Logic implements ActionListener, KeyListener {
     ArrayList<Pipe> pipes;
 
     public Logic() {
-        birdImage = new ImageIcon(getClass().getResource("assets/bird.png")).getImage();
+        birdImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("assets/bird.png"))).getImage();
         player = new Player(playerStartPosX, playerStartPosY, playerWidth, playerHeight, birdImage, 0);
 
-        lowerPipeImage = new ImageIcon(getClass().getResource("assets/lowerPipe.png")).getImage();
-        upperPipeImage = new ImageIcon(getClass().getResource("assets//upperPipe.png")).getImage();
-        pipes = new ArrayList<Pipe>();
+        lowerPipeImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("assets/lowerPipe.png"))).getImage();
+        upperPipeImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("assets/upperPipe.png"))).getImage();
+        pipes = new ArrayList<>();
 
         pipeCooldown = new Timer(1500, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ActionEvent) {
-                System.out.println("pipa");
                 placePipes();
             }
         });
@@ -68,11 +68,15 @@ public class Logic implements ActionListener, KeyListener {
     }
 
     public void placePipes() {
-        int randomPosY = (int) (pipeStartPosY - Math.random() * (pipeWidth/2));
-        int openningSpace = frameHeight/4;
+        int randomPosY = (int) (pipeStartPosY - ((double) pipeHeight /4) - Math.random() * ((double) pipeWidth /2));
+        int openingSpace = frameHeight/4;
 
-        Pipe upperPipe = new Pipe(pipeStartPosX, randomPosY, pipeWidth, pipeHeight, upperPipeImage);
+        Pipe upperPipe = new Pipe(pipeStartPosX,randomPosY, pipeWidth, pipeHeight, upperPipeImage);
         pipes.add(upperPipe);
+
+        Pipe lowerPipe = new Pipe(pipeStartPosX, randomPosY + openingSpace + pipeHeight,
+                pipeWidth, pipeHeight, lowerPipeImage);
+        pipes.add(lowerPipe);
     }
 
     public void move(){
@@ -80,9 +84,8 @@ public class Logic implements ActionListener, KeyListener {
         player.setPosY(player.getPosY() + player.getVelocityY());
         player.setPosY(Math.max(player.getPosY(), 0));
 
-        for(int i = 0; i < pipes.size(); i++){
-            Pipe pipe = pipes.get(i);
-            pipe.setPosX(pipe.getPosX() + pipe.getVelocityX());
+        for (Pipe pipe : pipes) {
+            pipe.setPosX(pipe.getPosX() + pipeVelocityX);
         }
     }
 

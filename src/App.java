@@ -7,7 +7,6 @@ public class App {
         frame.setSize(360,640);
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
-        frame.setVisible(true);
 
         Logic logika = new Logic();
         View tampilan = new View(logika);
@@ -18,5 +17,7 @@ public class App {
         frame.add(tampilan);
         frame.pack();
         tampilan.setVisible(true);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 }
