@@ -9,6 +9,7 @@ import java.util.Objects;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 
 public class Logic implements ActionListener, KeyListener {
     int frameWidth = 360;
@@ -26,6 +27,11 @@ public class Logic implements ActionListener, KeyListener {
 
     boolean started = false;
     boolean gameOver = false;
+
+    long lastFlyTime = 0;
+    int flyStreak = 0;
+
+    Clip flySfx;
     Clip bgm;
 
     int score = 0;
@@ -37,6 +43,7 @@ public class Logic implements ActionListener, KeyListener {
     int gravity = 1;
 
     int pipeVelocityX = -2;
+    int lastGapTop = 300;
 
     View view;
     Image backgroundImage;
@@ -66,6 +73,8 @@ public class Logic implements ActionListener, KeyListener {
         });
         loadBestScore();
         loadMusic();
+        flySfx = loadClip("assets/fly.wav");
+        playMusic();
 
         gameLoop = new Timer(1000/60, this);
     }
@@ -104,6 +113,41 @@ public class Logic implements ActionListener, KeyListener {
         }
     }
 
+    private Clip loadClip(String path) {
+        try {
+            AudioInputStream in = AudioSystem.getAudioInputStream(
+                    Objects.requireNonNull(getClass().getResource(path)));
+            Clip clip = AudioSystem.getClip();
+            clip.open(in);
+            return clip;
+        } catch (Exception e) {
+            System.out.println("Audio tidak dapat dimuat: " + path + " (" + e.getMessage() + ")");
+            return null; // game tetap jalan tanpa suara
+        }
+    }
+
+    public void playFly() {
+        if (flySfx == null) return;
+
+        long now = System.currentTimeMillis();
+        if (now - lastFlyTime < 300) {
+            flyStreak++;
+        } else {
+            flyStreak = 0;
+        }
+        lastFlyTime = now;
+
+        float db = -12f - Math.min(flyStreak, 6) * 3f;
+        try {
+            FloatControl gain = (FloatControl) flySfx.getControl(FloatControl.Type.MASTER_GAIN);
+            gain.setValue(Math.max(db, gain.getMinimum()));
+        } catch (IllegalArgumentException ex) {}
+
+        flySfx.stop();
+        flySfx.setFramePosition(0);
+        flySfx.start();
+    }
+
     public void playMusic() {
         if (bgm == null) return;
         bgm.stop();
@@ -120,7 +164,6 @@ public class Logic implements ActionListener, KeyListener {
         started = true;
         gameLoop.start();
         pipeCooldown.start();
-        playMusic();
         if (view != null) view.updateState();
     }
 
@@ -174,13 +217,23 @@ public class Logic implements ActionListener, KeyListener {
     }
 
     public void placePipes() {
-        int randomPosY = (int) (pipeStartPosY - ((double) pipeHeight /4) - Math.random() * ((double) pipeWidth /2));
-        int openingSpace = frameHeight/4;
+        int openingSpace = frameHeight / 4;
 
-        Pipe upperPipe = new Pipe(pipeStartPosX,randomPosY, pipeWidth, pipeHeight, upperPipeImage);
+        int minGapTop = 60;
+        int maxGapTop = 400;
+
+        int maxShift = Math.min(200, 50 + score * 15);
+
+        int gapTop = lastGapTop + (int) ((Math.random() * 2 - 1) * maxShift);
+        gapTop = Math.clamp(gapTop, minGapTop, maxGapTop);
+        lastGapTop = gapTop;
+
+        int upperPipeY = gapTop - pipeHeight;
+
+        Pipe upperPipe = new Pipe(pipeStartPosX, upperPipeY, pipeWidth, pipeHeight, upperPipeImage);
         pipes.add(upperPipe);
 
-        Pipe lowerPipe = new Pipe(pipeStartPosX, randomPosY + openingSpace + pipeHeight,
+        Pipe lowerPipe = new Pipe(pipeStartPosX, gapTop + openingSpace,
                 pipeWidth, pipeHeight, lowerPipeImage);
         pipes.add(lowerPipe);
     }
@@ -241,6 +294,7 @@ public class Logic implements ActionListener, KeyListener {
         }else if(!gameOver){
             if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                 player.setVelocityY(-10);
+                playFly();
             }
         }else{
             if (e.getKeyCode() == KeyEvent.VK_R) {

@@ -6,13 +6,11 @@ public class View extends JPanel {
     int width = 360;
     int height = 640;
 
-    // ukuran card
     private final int cardW = 320;
     private final int cardX = (width - cardW) / 2;
     private final int menuH = 190;
     private final int overH = 290;
 
-    // ukuran tombol
     private final int btnW = 130;
     private final int btnH = 40;
     private final int btnGap = 20;
@@ -61,7 +59,6 @@ public class View extends JPanel {
         updateState();
     }
 
-    // Dipanggil Logic setiap status game berubah (menu / main / game over)
     public void updateState() {
         boolean menu = !logic.isStarted();
         boolean over = logic.isGameOver();
@@ -99,8 +96,15 @@ public class View extends JPanel {
 
         Player player = logic.getPlayer();
         if (player != null) {
+            double angle = Math.clamp(player.getVelocityY() * 0.07, -0.45, 1.2);
+
+            java.awt.geom.AffineTransform old = g2.getTransform();
+            g2.rotate(angle,
+                    player.getPosX() + player.getWidth() / 2.0,
+                    player.getPosY() + player.getHeight() / 2.0);
             g.drawImage(player.getImage(), player.getPosX(), player.getPosY(),
                     player.getWidth(), player.getHeight(), null);
+            g2.setTransform(old);
         }
 
         ArrayList<Pipe> pipes = logic.getPipes();
@@ -112,7 +116,7 @@ public class View extends JPanel {
         // Skor di tengah atas (hanya saat bermain)
         if (logic.isStarted() && !logic.isGameOver()) {
             g2.setFont(pixel(32));
-            drawCenteredOutlined(g2, String.valueOf(logic.getScore()), width / 2, 80);
+            drawCenteredOutlined(g2, String.valueOf(logic.getScore()), width / 2);
         }
 
         if (!logic.isStarted()) {
@@ -171,7 +175,7 @@ public class View extends JPanel {
     }
 
     private void drawCard(Graphics2D g2, int x, int y, int w, int h) {
-        g2.setColor(new Color(0, 0, 0, 70)); // bayangan
+        g2.setColor(new Color(0, 0, 0, 70));
         g2.fillRoundRect(x + 4, y + 6, w, h, 28, 28);
         g2.setColor(new Color(255, 250, 235));
         g2.fillRoundRect(x, y, w, h, 28, 28);
@@ -191,20 +195,19 @@ public class View extends JPanel {
         g2.drawString(text, cx - fm.stringWidth(text) / 2, baselineY);
     }
 
-    private void drawCenteredOutlined(Graphics2D g2, String text, int cx, int baselineY) {
+    private void drawCenteredOutlined(Graphics2D g2, String text, int cx) {
         FontMetrics fm = g2.getFontMetrics();
         int x = cx - fm.stringWidth(text) / 2;
         g2.setColor(Color.BLACK);
         for (int dx = -2; dx <= 2; dx++) {
             for (int dy = -2; dy <= 2; dy++) {
-                g2.drawString(text, x + dx, baselineY + dy);
+                g2.drawString(text, x + dx, 80 + dy);
             }
         }
         g2.setColor(Color.WHITE);
-        g2.drawString(text, x, baselineY);
+        g2.drawString(text, x, 80);
     }
 
-    // Tombol bulat yang tampil sama di semua Look and Feel
     private static class RoundButton extends JButton {
         private final Color base;
 
