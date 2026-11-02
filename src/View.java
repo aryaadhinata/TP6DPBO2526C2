@@ -15,6 +15,8 @@ public class View extends JPanel {
     private final int btnH = 40;
     private final int btnGap = 20;
 
+    private final JLabel scoreLabel = new JLabel("0", SwingConstants.CENTER);
+
     private Logic logic;
 
     // Font pixel (Press Start 2P), dimuat dari assets
@@ -42,6 +44,11 @@ public class View extends JPanel {
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.cyan);
         setLayout(null);
+
+        scoreLabel.setFont(pixel(32));
+        scoreLabel.setForeground(Color.WHITE);
+        scoreLabel.setBounds(0, 40, width, 50);
+        add(scoreLabel);
 
         setFocusable(true);
         addKeyListener(logic);
@@ -113,10 +120,10 @@ public class View extends JPanel {
                     pipe.getWidth(), pipe.getHeight(), null);
         }
 
-        // Skor di tengah atas (hanya saat bermain)
         if (logic.isStarted() && !logic.isGameOver()) {
             g2.setFont(pixel(32));
-            drawCenteredOutlined(g2, String.valueOf(logic.getScore()), width / 2);
+            scoreLabel.setText(String.valueOf(logic.getScore()));
+            scoreLabel.setVisible(logic.isStarted() && !logic.isGameOver());
         }
 
         if (!logic.isStarted()) {
