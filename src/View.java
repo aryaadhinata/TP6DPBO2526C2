@@ -1,21 +1,87 @@
 import javax.swing.*;
 import java.awt.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class View extends JPanel {
-    int width =  360;
-    int height =  640;
+    int width = 360;
+    int height = 640;
+
+    // ukuran card
+    private final int cardW = 320;
+    private final int cardX = (width - cardW) / 2;
+    private final int menuH = 190;
+    private final int overH = 290;
+
+    // ukuran tombol
+    private final int btnW = 130;
+    private final int btnH = 40;
+    private final int btnGap = 20;
 
     private Logic logic;
 
+    // Font pixel (Press Start 2P), dimuat dari assets
+    private static Font pixelBase;
+    static {
+        try (java.io.InputStream is = View.class.getResourceAsStream("assets/PressStart2P-Regular.ttf")) {
+            pixelBase = Font.createFont(Font.TRUETYPE_FONT, is);
+        } catch (Exception e) {
+            pixelBase = null; // fallback ke Monospaced
+        }
+    }
+
+    private static Font pixel(int size) {
+        return pixelBase != null ? pixelBase.deriveFont((float) size)
+                : new Font("Monospaced", Font.BOLD, size);
+    }
+
+    private final RoundButton playButton = new RoundButton("Play", new Color(76, 175, 80));
+    private final RoundButton menuExitButton = new RoundButton("Exit", new Color(229, 57, 53));
+    private final RoundButton restartButton = new RoundButton("Restart", new Color(76, 175, 80));
+    private final RoundButton overExitButton = new RoundButton("Exit", new Color(229, 57, 53));
+
     public View(Logic logic) {
         this.logic = logic;
-        setPreferredSize(new Dimension(width,height));
+        setPreferredSize(new Dimension(width, height));
         setBackground(Color.cyan);
+        setLayout(null);
 
         setFocusable(true);
         addKeyListener(logic);
+
+        playButton.addActionListener(e -> logic.startGame());
+        menuExitButton.addActionListener(e -> logic.exitGame());
+        restartButton.addActionListener(e -> logic.restart());
+        overExitButton.addActionListener(e -> logic.exitGame());
+
+        add(playButton);
+        add(menuExitButton);
+        add(restartButton);
+        add(overExitButton);
+
+        updateState();
+    }
+
+    // Dipanggil Logic setiap status game berubah (menu / main / game over)
+    public void updateState() {
+        boolean menu = !logic.isStarted();
+        boolean over = logic.isGameOver();
+
+        int menuY = (height - menuH) / 2;
+        int overY = (height - overH) / 2;
+        int x1 = cardX + (cardW - (btnW * 2 + btnGap)) / 2;
+        int x2 = x1 + btnW + btnGap;
+
+        playButton.setBounds(x1, menuY + 100, btnW, btnH);
+        menuExitButton.setBounds(x2, menuY + 100, btnW, btnH);
+        restartButton.setBounds(x1, overY + 180, btnW, btnH);
+        overExitButton.setBounds(x2, overY + 180, btnW, btnH);
+
+        playButton.setVisible(menu);
+        menuExitButton.setVisible(menu);
+        restartButton.setVisible(over);
+        overExitButton.setVisible(over);
+
+        repaint();
     }
 
     @Override
@@ -25,7 +91,11 @@ public class View extends JPanel {
     }
 
     public void draw(Graphics g) {
-        g.drawImage(logic.getBackgroundImage(), 0, 0, width,height, null);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+
+        g.drawImage(logic.getBackgroundImage(), 0, 0, width, height, null);
 
         Player player = logic.getPlayer();
         if (player != null) {
@@ -34,32 +104,142 @@ public class View extends JPanel {
         }
 
         ArrayList<Pipe> pipes = logic.getPipes();
-        if(!pipes.isEmpty()){
-            for (Pipe pipe : pipes) {
-                g.drawImage(pipe.getImage(), pipe.getPosX(), pipe.getPosY(),
-                        pipe.getWidth(), pipe.getHeight(), null);
-            }
+        for (Pipe pipe : pipes) {
+            g.drawImage(pipe.getImage(), pipe.getPosX(), pipe.getPosY(),
+                    pipe.getWidth(), pipe.getHeight(), null);
         }
 
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Consolas", Font.BOLD, 32));
-        g.drawString(String.valueOf(logic.getScore()), 20, 50);
+        // Skor di tengah atas (hanya saat bermain)
+        if (logic.isStarted() && !logic.isGameOver()) {
+            g2.setFont(pixel(32));
+            drawCenteredOutlined(g2, String.valueOf(logic.getScore()), width / 2, 80);
+        }
 
-        if (logic.isGameOver()) {
-            g.setColor(new Color(0, 0, 0, 160));
-            g.fillRect(0, 0, width, height);
+        if (!logic.isStarted()) {
+            drawMenuCard(g2);
+        } else if (logic.isGameOver()) {
+            drawGameOverCard(g2);
+        }
+    }
 
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Consolas", Font.BOLD, 40));
-            g.drawString("GAME OVER", 55, 240);
+    private void drawMenuCard(Graphics2D g2) {
+        dimBackground(g2);
+        int y = (height - menuH) / 2;
+        drawCard(g2, cardX, y, cardW, menuH);
 
-            g.setFont(new Font("Consolas", Font.PLAIN, 22));
-            g.drawString("Skor: " + logic.getScore(), 120, 300);
-            g.drawString("Best: " + logic.getBestScore(), 120, 335);
+        // Judul "Flappy Bird" + tulisan kecil "Imitasi" di sisi kanannya
+        Font titleFont = pixel(20);
+        Font smallFont = pixel(8);
+        FontMetrics tm = g2.getFontMetrics(titleFont);
+        FontMetrics sm = g2.getFontMetrics(smallFont);
+        String title = "Flappy Bird";
+        String sub = "Imitasi";
+        int gap = 4;
+        int total = tm.stringWidth(title) + gap + sm.stringWidth(sub);
+        int tx = cardX + (cardW - total) / 2;
+        int ty = y + 62;
 
-            g.setFont(new Font("Consolas", Font.BOLD, 18));
-            g.drawString("[R] Restart", 110, 410);
-            g.drawString("[ESC] Keluar", 110, 445);
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(titleFont);
+        g2.drawString(title, tx, ty);
+        g2.setColor(Color.GRAY);
+        g2.setFont(smallFont);
+        g2.drawString(sub, tx + tm.stringWidth(title) + gap, ty);
+
+        drawHint(g2, "Spasi = Play   |   Esc = Exit", y + menuH - 22);
+    }
+
+    private void drawGameOverCard(Graphics2D g2) {
+        dimBackground(g2);
+        int y = (height - overH) / 2;
+        drawCard(g2, cardX, y, cardW, overH);
+
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(pixel(20));
+        drawCentered(g2, "Game Over", width / 2, y + 62);
+
+        g2.setFont(pixel(14));
+        drawCentered(g2, "Skor : " + logic.getScore(), width / 2, y + 108);
+        drawCentered(g2, "Best : " + logic.getBestScore(), width / 2, y + 142);
+
+        drawHint(g2, "R = Restart   |   Esc = Exit", y + overH - 22);
+    }
+
+    private void dimBackground(Graphics2D g2) {
+        g2.setColor(new Color(0, 0, 0, 110));
+        g2.fillRect(0, 0, width, height);
+    }
+
+    private void drawCard(Graphics2D g2, int x, int y, int w, int h) {
+        g2.setColor(new Color(0, 0, 0, 70)); // bayangan
+        g2.fillRoundRect(x + 4, y + 6, w, h, 28, 28);
+        g2.setColor(new Color(255, 250, 235));
+        g2.fillRoundRect(x, y, w, h, 28, 28);
+        g2.setColor(new Color(222, 184, 100));
+        g2.setStroke(new BasicStroke(4));
+        g2.drawRoundRect(x, y, w, h, 28, 28);
+    }
+
+    private void drawHint(Graphics2D g2, String text, int baselineY) {
+        g2.setColor(Color.GRAY);
+        g2.setFont(pixel(8));
+        drawCentered(g2, text, width / 2, baselineY);
+    }
+
+    private void drawCentered(Graphics2D g2, String text, int cx, int baselineY) {
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(text, cx - fm.stringWidth(text) / 2, baselineY);
+    }
+
+    private void drawCenteredOutlined(Graphics2D g2, String text, int cx, int baselineY) {
+        FontMetrics fm = g2.getFontMetrics();
+        int x = cx - fm.stringWidth(text) / 2;
+        g2.setColor(Color.BLACK);
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dy = -2; dy <= 2; dy++) {
+                g2.drawString(text, x + dx, baselineY + dy);
+            }
+        }
+        g2.setColor(Color.WHITE);
+        g2.drawString(text, x, baselineY);
+    }
+
+    // Tombol bulat yang tampil sama di semua Look and Feel
+    private static class RoundButton extends JButton {
+        private final Color base;
+
+        RoundButton(String text, Color base) {
+            super(text);
+            this.base = base;
+            setFocusable(false); // supaya keyboard (spasi/esc) tetap diterima panel
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setForeground(Color.WHITE);
+            setFont(pixel(12));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+
+            Color c = base;
+            if (getModel().isPressed()) c = base.darker().darker();
+            else if (getModel().isRollover()) c = base.brighter();
+
+            g2.setColor(c);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+
+            g2.setColor(getForeground());
+            g2.setFont(getFont());
+            FontMetrics fm = g2.getFontMetrics();
+            int tx = (getWidth() - fm.stringWidth(getText())) / 2;
+            int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+            g2.drawString(getText(), tx, ty);
+            g2.dispose();
         }
     }
 }

@@ -12,7 +12,8 @@ public class App {
         View tampilan = new View(logika);
         logika.setView(tampilan);
 
-        tampilan.requestFocus();
+        frame.setVisible(true);
+        tampilan.requestFocusInWindow();
 
         frame.add(tampilan);
         frame.pack();

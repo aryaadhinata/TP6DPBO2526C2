@@ -6,6 +6,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Objects;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 
 public class Logic implements ActionListener, KeyListener {
     int frameWidth = 360;
@@ -21,9 +24,12 @@ public class Logic implements ActionListener, KeyListener {
     int pipeWidth = 64;
     int pipeHeight = 512;
 
+    boolean started = false;
+    boolean gameOver = false;
+    Clip bgm;
+
     int score = 0;
     int bestScore = 0;
-    boolean gameOver = false;
     java.io.File bestFile = new java.io.File("bestscore.txt");
 
     Timer gameLoop;
@@ -58,12 +64,10 @@ public class Logic implements ActionListener, KeyListener {
                 placePipes();
             }
         });
-        pipeCooldown.start();
-
         loadBestScore();
+        loadMusic();
 
         gameLoop = new Timer(1000/60, this);
-        gameLoop.start();
     }
 
     public Image getBackgroundImage() {
@@ -86,6 +90,44 @@ public class Logic implements ActionListener, KeyListener {
     public int getBestScore() { return bestScore; }
     public boolean isGameOver() { return gameOver; }
 
+    public boolean isStarted() { return started; }
+
+    public void loadMusic() {
+        try {
+            AudioInputStream in = AudioSystem.getAudioInputStream(
+                    Objects.requireNonNull(getClass().getResource("assets/theme.wav")));
+            bgm = AudioSystem.getClip();
+            bgm.open(in);
+        } catch (Exception e) {
+            bgm = null; // game tetap jalan tanpa suara
+            System.out.println("Audio tidak dapat dimuat: " + e.getMessage());
+        }
+    }
+
+    public void playMusic() {
+        if (bgm == null) return;
+        bgm.stop();
+        bgm.setFramePosition(0);
+        bgm.loop(Clip.LOOP_CONTINUOUSLY);
+    }
+
+    public void stopMusic() {
+        if (bgm != null) bgm.stop();
+    }
+
+    public void startGame() {
+        if (started) return;
+        started = true;
+        gameLoop.start();
+        pipeCooldown.start();
+        playMusic();
+        if (view != null) view.updateState();
+    }
+
+    public void exitGame() {
+        System.exit(0);
+    }
+
     public void loadBestScore() {
         try {
             if (bestFile.exists()) {
@@ -106,13 +148,16 @@ public class Logic implements ActionListener, KeyListener {
     }
 
     public void gameOver() {
+        if (gameOver) return;
         gameOver = true;
+        stopMusic();
         gameLoop.stop();
         pipeCooldown.stop();
         if (score > bestScore) {
             bestScore = score;
             saveBestScore();
         }
+        if (view != null) view.updateState();
     }
 
     public void restart() {
@@ -124,7 +169,8 @@ public class Logic implements ActionListener, KeyListener {
         gameOver = false;
         gameLoop.start();
         pipeCooldown.start();
-        view.repaint();
+        playMusic();
+        view.updateState();
     }
 
     public void placePipes() {
@@ -186,7 +232,13 @@ public class Logic implements ActionListener, KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {}
     public void keyPressed(KeyEvent e) {
-        if(!gameOver){
+        if(!started){
+            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                startGame();
+            } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                exitGame();
+            }
+        }else if(!gameOver){
             if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                 player.setVelocityY(-10);
             }
@@ -194,7 +246,7 @@ public class Logic implements ActionListener, KeyListener {
             if (e.getKeyCode() == KeyEvent.VK_R) {
                 restart();
             } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                System.exit(0);
+                exitGame();
             }
         }
     }
