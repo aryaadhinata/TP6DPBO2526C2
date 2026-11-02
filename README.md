@@ -250,3 +250,13 @@ Dari menu, pemain menekan **Play**, lalu burung dibiarkan jatuh sampai melewati 
 Dari card game over, pemain menekan **Restart**, melewati satu pasang pipa (skor menjadi 1), lalu menabrak pipa berikutnya. Card game over menampilkan skor 1 dan best score, lengkap dengan tombol **Restart** dan **Exit**.
 
 ![Restart, melewati pipa, lalu menabrak pipa](documentationReadME/die_fall.gif)
+
+## Kredit
+ 
+| Aset | Sumber |
+|---|---|
+| Musik latar (`theme.wav`) | Backsound dari game **Flappy Bird** yang asli |
+| Efek suara loncat (`Fly.wav`) | Efek suara dari game **Mario** |
+| Font (`PressStart2P-Regular.ttf`) | [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) oleh CodeMan38, lisensi SIL Open Font License |
+ 
+Seluruh hak cipta musik dan efek suara tersebut dimiliki oleh pemilik aslinya. Proyek ini dibuat untuk keperluan pembelajaran dan tidak untuk tujuan komersial.
