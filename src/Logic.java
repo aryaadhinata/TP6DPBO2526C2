@@ -11,6 +11,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 
+/** Owns the game state, simulation loop, input handling, and audio playback. */
 public class Logic implements ActionListener, KeyListener {
     int frameWidth = 360;
     int frameHeight = 640;
@@ -55,6 +56,7 @@ public class Logic implements ActionListener, KeyListener {
     Image upperPipeImage;
     ArrayList<Pipe> pipes;
 
+    /** Loads game assets and initializes timers, audio, and the saved best score. */
     public Logic() {
         backgroundImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("assets/background.png"))).getImage();
 
@@ -108,7 +110,8 @@ public class Logic implements ActionListener, KeyListener {
             bgm = AudioSystem.getClip();
             bgm.open(in);
         } catch (Exception e) {
-            bgm = null; // game tetap jalan tanpa suara
+            // Audio is optional; the game remains playable if the music is unavailable.
+            bgm = null;
             System.out.println("Audio tidak dapat dimuat: " + e.getMessage());
         }
     }
@@ -121,8 +124,8 @@ public class Logic implements ActionListener, KeyListener {
             clip.open(in);
             return clip;
         } catch (Exception e) {
-            System.out.println("Audio tidak dapat dimuat: " + path + " (" + e.getMessage() + ")");
-            return null; // game tetap jalan tanpa suara
+            // Audio is optional; callers can safely skip playback when loading fails.
+            return null;
         }
     }
 
@@ -141,8 +144,9 @@ public class Logic implements ActionListener, KeyListener {
         try {
             FloatControl gain = (FloatControl) flySfx.getControl(FloatControl.Type.MASTER_GAIN);
             gain.setValue(Math.max(db, gain.getMinimum()));
-        } catch (IllegalArgumentException ex) {}
+        } catch (IllegalArgumentException _) {}
 
+        // Restart the clip so repeated input plays immediately instead of waiting for it to finish.
         flySfx.stop();
         flySfx.setFramePosition(0);
         flySfx.start();
@@ -171,6 +175,7 @@ public class Logic implements ActionListener, KeyListener {
         System.exit(0);
     }
 
+    /** Loads the persisted best score, if a valid score file is available. */
     public void loadBestScore() {
         try {
             if (bestFile.exists()) {
@@ -182,6 +187,7 @@ public class Logic implements ActionListener, KeyListener {
         }
     }
 
+    /** Persists the current best score to the score file. */
     public void saveBestScore() {
         try {
             java.nio.file.Files.write(bestFile.toPath(), String.valueOf(bestScore).getBytes());
@@ -190,6 +196,7 @@ public class Logic implements ActionListener, KeyListener {
         }
     }
 
+    /** Stops active game timers and records a new best score when applicable. */
     public void gameOver() {
         if (gameOver) return;
         gameOver = true;
@@ -203,6 +210,7 @@ public class Logic implements ActionListener, KeyListener {
         if (view != null) view.updateState();
     }
 
+    /** Restores the initial gameplay state and resumes the game. */
     public void restart() {
         player.setPosX(playerStartPosX);
         player.setPosY(playerStartPosY);
@@ -216,12 +224,14 @@ public class Logic implements ActionListener, KeyListener {
         view.updateState();
     }
 
+    /** Adds a pipe pair with a randomized opening based on the previous pair. */
     public void placePipes() {
         int openingSpace = frameHeight / 4;
 
         int minGapTop = 60;
         int maxGapTop = 400;
 
+        // Increase gap variation with score, up to a fixed limit.
         int maxShift = Math.min(200, 50 + score * 15);
 
         int gapTop = lastGapTop + (int) ((Math.random() * 2 - 1) * maxShift);
@@ -254,6 +264,7 @@ public class Logic implements ActionListener, KeyListener {
                 gameOver();
             }
 
+            // Count each pair once, using its upper pipe as the scoring marker.
             if (!pipe.getPassed() && pipe.getImage() == upperPipeImage
                     && player.getPosX() > pipe.getPosX() + pipe.getWidth()) {
                 pipe.setPassed(true);
@@ -267,6 +278,7 @@ public class Logic implements ActionListener, KeyListener {
         }
     }
 
+    /** Checks whether the player and pipe rectangles overlap. */
     public boolean collision(Player p, Pipe pipe) {
         return p.getPosX() < pipe.getPosX() + pipe.getWidth()
                 && p.getPosX() + p.getWidth() > pipe.getPosX()
@@ -284,6 +296,9 @@ public class Logic implements ActionListener, KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {}
+
+    /** Maps keyboard input to the action available in the current game state. */
+    @Override
     public void keyPressed(KeyEvent e) {
         if(!started){
             if (e.getKeyCode() == KeyEvent.VK_SPACE) {

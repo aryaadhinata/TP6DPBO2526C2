@@ -1,6 +1,8 @@
 import javax.swing.*;
 
+/** Creates and displays the application's main game window. */
 public class App {
+    /** Launches the application and initializes its game window. */
     public static void main(String[] args) {
         JFrame frame = new JFrame("FlappyBird");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

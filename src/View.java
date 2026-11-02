@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
+/** Renders the game scene and manages menu and game-over controls. */
 public class View extends JPanel {
     int width = 360;
     int height = 640;
@@ -19,13 +20,13 @@ public class View extends JPanel {
 
     private Logic logic;
 
-    // Font pixel (Press Start 2P), dimuat dari assets
+    // Load the bundled pixel font once; use a system font if the asset is unavailable.
     private static Font pixelBase;
     static {
         try (java.io.InputStream is = View.class.getResourceAsStream("assets/PressStart2P-Regular.ttf")) {
             pixelBase = Font.createFont(Font.TRUETYPE_FONT, is);
         } catch (Exception e) {
-            pixelBase = null; // fallback ke Monospaced
+            pixelBase = null;
         }
     }
 
@@ -39,6 +40,7 @@ public class View extends JPanel {
     private final RoundButton restartButton = new RoundButton("Restart", new Color(76, 175, 80));
     private final RoundButton overExitButton = new RoundButton("Exit", new Color(229, 57, 53));
 
+    /** Creates the game panel and connects its controls to the game logic. */
     public View(Logic logic) {
         this.logic = logic;
         setPreferredSize(new Dimension(width, height));
@@ -66,6 +68,7 @@ public class View extends JPanel {
         updateState();
     }
 
+    /** Updates control visibility and layout to match the current game state. */
     public void updateState() {
         boolean menu = !logic.isStarted();
         boolean over = logic.isGameOver();
@@ -94,6 +97,7 @@ public class View extends JPanel {
         draw(g);
     }
 
+    /** Draws the background, game entities, score, and state-specific overlay. */
     public void draw(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -138,7 +142,7 @@ public class View extends JPanel {
         int y = (height - menuH) / 2;
         drawCard(g2, cardX, y, cardW, menuH);
 
-        // Judul "Flappy Bird" + tulisan kecil "Imitasi" di sisi kanannya
+        // Center the title and subtitle together as one visual group.
         Font titleFont = pixel(20);
         Font smallFont = pixel(8);
         FontMetrics tm = g2.getFontMetrics(titleFont);
@@ -221,7 +225,8 @@ public class View extends JPanel {
         RoundButton(String text, Color base) {
             super(text);
             this.base = base;
-            setFocusable(false); // supaya keyboard (spasi/esc) tetap diterima panel
+            // Keep keyboard input on the game panel rather than this button.
+            setFocusable(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);

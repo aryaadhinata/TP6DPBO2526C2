@@ -1,5 +1,6 @@
 import java.awt.*;
 
+/** Stores the position, dimensions, image, and scoring state of a pipe. */
 public class Pipe {
     private int posX;
     private int posY;
@@ -9,6 +10,7 @@ public class Pipe {
     private int VelocityX;
     boolean passed;
 
+    /** Creates a pipe with the supplied position, dimensions, and image. */
     public Pipe(int posX, int posY, int width, int height, Image image) {
         this.posX = posX;
         this.posY = posY;

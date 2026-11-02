@@ -1,5 +1,6 @@
 import java.awt.*;
 
+/** Stores the player's position, dimensions, image, and vertical velocity. */
 public class Player {
     private int posX;
     private int posY;
@@ -8,7 +9,8 @@ public class Player {
     private Image image;
     private int velocityY = -0;
 
-    public Player(int posX, int posY, int width, int height,  Image image, int velocityY) {
+    /** Creates a player with the supplied initial state. */
+    public Player(int posX, int posY, int width, int height, Image image, int velocityY) {
         this.posX = posX;
         this.posY = posY;
         this.width = width;
